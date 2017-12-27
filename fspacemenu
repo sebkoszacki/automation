@@ -1,0 +1,307 @@
+#!/bin/sh
+
+if [ $(whoami) != 'root' ]; then
+        echo "Must be root to run $0"
+        exit 1;
+fi
+
+History="/root/.fmenus_bash_history"
+inodetmp="/tmp/inodetmp-$(date +%Y%m%d).log"
+trap "{ rm -f $inodetmp; }" EXIT
+
+# Available menu list:
+
+menu1="1 - display space taken by /var/lib/mysql directory"
+menu2="2 - display cpanel suspended accounts (only shows large accounts)"
+menu3="3 - quick release space (this can take a while)"
+menu4="4 - list mail trash folders"
+menu5="5 - check eximstats size"
+menu6="6 - find files in mysql folder larger then 250MB"
+menu7="7 - find files in home directory larger then 100MB"
+menu8="8 - search for most inode used directory (search starts from location you are currently in) *BETA*"
+menu9="9 - clearing files in /tmp folder"
+menu10="10 - delete all trash folder content from cpanel email accounts (Can take some time)"
+menu11="11 - search for core dump files and remove them (search is performed in /home* directory)"
+
+if [[ $1 ]]; then
+
+if [[  $1 == "man" ]] || [[  $1 == "0" ]] || [[ $1 -ge "11" ]]
+then
+
+echo -e "Type 'fspacemenu man' for details on how to use this tool."
+
+fi
+
+for i in $(echo "$@" | tr ' ' '\n' | awk '!x[$0]++');do
+
+	if [[ $i == "1" ]]
+	then
+
+		echo -e "\n${menu1}\n"
+		du -h /var/lib/mysql/ --max-depth=1
+		echo "$(date && who) du -h /var/lib/mysql/ --max-depth=1" >> ${History}
+
+	fi
+
+	if [[ $i == "2" ]]
+	then
+
+		echo -e "\n${menu2}\n"
+		if [ -d /var/cpanel/suspended/ ]; then
+
+			ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6,$7,$9}'
+			echo "$(date && who) ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6,$7,$9}'" >> ${History}
+
+		else
+
+			echo "Info: Server doesn't have any suspended cPanel accounts."
+
+		fi
+
+	fi
+
+	if [[ $i == "3" ]]
+	then
+		echo -e "\n${menu3}\n"
+		yum clean all;
+		echo 'Removing logs';find /var/log/ -type f -regex ".*[1-4]\(\.gz\)?" -delete && find /var/log/ -type f -regex ".*\(btmp\|secure\)-.*[^.]" -delete;echo > /var/log/btmp;
+		echo 'Cleaning trash';find /home*/*/.trash -type f -delete && find /home*/*/tmp -type f -name ".upload.*" -delete;
+		echo 'Clearing softaculous backups';find /home*/*/softaculous_backups -maxdepth 1 -type f -delete ;
+		echo 'Purging def unread email';find /home*/*/mail/new -type f -ctime +5 -delete && find /home*/*/mail/.Trash -type f -delete;
+		echo 'Truncating large error logs';ionice -n 3 -c 3 find /home*/*/public_html \( ! -path "/home/virtfs/" \) -name "error_log" -type f -size +20M -exec truncate -s1 {} \;
+
+		echo "$(date && who) yum clean all; echo 'Removing logs';find /var/log/ -type f -regex ".*[1-4]\(\.gz\)?" -delete && find /var/log/ -type f -regex ".*\(btmp\|secure\)-.*[^.]" -delete;echo > /var/log/btmp; echo 'Cleaning trash';find /home*/*/.trash -type f -delete && find /home*/*/tmp -type f -name ".upload.*" -delete;echo 'Clearing softaculous backups'; find /home*/*/softaculous_backups -type f -delete;echo 'Purging def unread email';find /home*/*/mail/new -type f -ctime +5 -delete && find /home*/*/mail/.Trash -type f -delete;echo 'Truncating large error logs';ionice -n 3 -c 3 find /home*/*/public_html \( ! -path "/home/virtfs/" \) -name "error_log" -type f -size +20M -exec truncate -s1 {} \;" >> ${History}
+
+	fi
+
+	if [[ $i == "4" ]]
+	then
+		echo -e "\n${menu4}\n"
+		find /home*/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec du -hs {} \; | grep 'G\|M' |sort -n
+
+		echo "$(date && who) find /home/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec du -hs {} \; | grep 'G\|M' |sort -n" >> ${History}
+
+	fi
+
+	if [[ $i == "5" ]]
+	then
+		echo -e "\n${menu5}\n"
+		if [ -d /var/lib/mysql/eximstats ]; then
+			du -hs /var/lib/mysql/eximstats
+			echo "$(date && who) du -hs /var/lib/mysql/eximstats" >> ${History}
+			echo -n "would you like to truncate defers, failures, sends and smtp tables on eximstats database (y/n)? "
+		read i
+	        	if echo "$i" | grep -iq "^y" ;then
+				mysql eximstats -e "truncate failures; truncate defers; truncate sends; truncate smtp;"
+				echo "$(date && who) mysql eximstats -e 'truncate failures; truncate defers; truncate sends; truncate smtp;'" >> ${History}
+		else
+			echo "No action taken"
+
+		fi
+
+		else
+
+			echo "Info: eximstats does not exist. No action taken"
+
+		fi
+
+	fi
+
+	if [[ $i == "6" ]]
+	then
+		echo -e "\n${menu6}\n"
+		find /var/lib/mysql -size +250M -exec du -hs {} \;
+		echo "$(date && who) find /var/lib/mysql -size +250M -exec du -hs {} \;" >> ${History}
+
+	fi
+
+	if [[ $i == "7" ]]
+	then
+		echo -e "\n${menu7}\n"
+		ionice -n 3 -c 3 find /home* \( ! -path "/home/virtfs/*" \) -type f -size +100M -exec du -hs {} \; |sort -n
+		echo "$(date && who) ionice -n 3 -c 3 find /home* \( ! -path "/home/virtfs/*" \) -type f -size +100M -exec du -hs {} \; |sort -n" >> ${History}
+
+	fi
+
+	if [[ $i == "8" ]]
+	then
+		echo -e "\n${menu8}\n"
+			find . -xdev -type f | cut -d "/" -f 2 | sort | uniq -c | sort -n > $inodetmp && cat $inodetmp | tail -n 10 && if [ -d "$(cat $inodetmp | tail -1 | awk '{print $2}')" ]; then
+			cd $(cat $inodetmp | tail -1 | awk '{print $2}') && echo && pwd
+
+		else
+
+			echo -e "\nThere is no more directories that you can access... Directory with most files is: \n$(pwd)"
+
+		fi
+			echo "$(date && who) find . -xdev -type f | cut -d "/" -f 2 | sort | uniq -c | sort -n > $inodetmp && cat $inodetmp | tail -n 10 && cd $(cat $inodetmp | tail -1 | awk '{print $2}')" >> ${History}
+
+	fi
+
+	if [[ $i == "9" ]]
+	then
+		echo -e "\n${menu9}\n"
+		find /tmp/ -type f -mtime +0 -exec rm -v {} \;
+		echo "$(date && who) find /tmp/ -type f -mtime +0 -exec rm -v {} \;" >> ${History}
+
+	fi
+
+	if [[ $i == "10" ]]
+	then
+		echo -e "\n${menu10}\n"
+		find /home*/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec rm -frv {} \;
+		echo "$(date && who) find /home*/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec rm -frv {} \;" >> ${History}
+
+	fi
+
+	if [[ $i == "11" ]]
+	then
+		echo -e "\n${menu11}\n"
+		find /home* \( ! -path "/home/virtfs/*" \) -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -v {} \;
+		echo "$(date && who) find /home* \( ! -path "/home/virtfs/*" \) -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -v {} \;" >>  ${History}
+
+	fi
+
+if [[ $i == "man" ]]
+then
+
+echo -e "\nFor history look into: ${History}"
+
+echo -e "\nPlease enter input as follow, example: 'fspacemenu 1 2 3' (please note that selection can be mixed and do not have to be in order)\nAlso 'fspacemenu' can be acessed by simply typing 'fspacemenu'\n"
+echo "Hostname: $(hostname)"
+echo "Current load avarage:"
+    cat /proc/loadavg
+        echo
+            df -h
+        echo
+            df -ih
+        echo
+    echo -e "${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n${menu9}\n${menu10}\n${menu11}\n"
+
+fi
+
+done
+
+else
+	echo
+	echo " - - - - - - - - - - - - - - - - - - - - - - - - "
+        echo " - - _ - - Welcome to Free Space menu  - - _ - - "
+        echo " - - ^ - -        Version 7269         - - ^ - - "
+        echo " - - - - - - - - - - - - - - - - - - - - - - - - "
+	echo -e "\nToday's date is: $(date)"
+	echo -e "\nUsers logged in: \n$(who)"
+
+echo "For history look into: ${History}"
+
+selection=
+until [ "$selection" = "exit" ]; do
+    echo ""
+	echo "Hostname: $(hostname)"
+	echo "Current load avarage:"
+                cat /proc/loadavg
+        echo
+            	df -h
+        echo
+            	df -ih
+
+    echo -e "\n${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n${menu9}\n${menu10}\n${menu11}\n"
+
+    echo -e "To exit please type 'exit' or '0' or simply press CTRL + C\n"
+
+    echo -n "Enter selection: "
+    read selection
+    echo 
+    case $selection in
+
+        1 ) 
+		du -h /var/lib/mysql/ --max-depth=1
+		echo "$(date && who) du -h /var/lib/mysql/ --max-depth=1" >> ${History}
+	;;
+        2 ) 
+		if [ -d /var/cpanel/suspended/ ]; then
+
+			ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6,$7,$9}'
+			echo "$(date && who) ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6,$7,$9}'" >> ${History}
+
+		else
+
+			echo "Info: Server doesn't have any suspended cPanel accounts."
+
+		fi
+	;;
+	3 ) 
+		yum clean all;
+		echo 'Removing logs';find /var/log/ -type f -regex ".*[1-4]\(\.gz\)?" -delete && find /var/log/ -type f -regex ".*\(btmp\|secure\)-.*[^.]" -delete;echo > /var/log/btmp;
+		echo 'Cleaning trash';find /home*/*/.trash -type f -delete && find /home*/*/tmp -type f -name ".upload.*" -delete;
+		echo 'Clearing softaculous backups';find /home*/*/softaculous_backups -maxdepth 1 -type f -delete ;
+		echo 'Purging def unread email';find /home*/*/mail/new -type f -ctime +5 -delete && find /home*/*/mail/.Trash -type f -delete;
+		echo 'Truncating large error logs';ionice -n 3 -c 3 find /home*/*/public_html \( ! -path "/home/virtfs/" \) -name "error_log" -type f -size +20M -exec truncate -s1 {} \;
+
+		echo "$(date && who) yum clean all; echo 'Removing logs';find /var/log/ -type f -regex ".*[1-4]\(\.gz\)?" -delete && find /var/log/ -type f -regex ".*\(btmp\|secure\)-.*[^.]" -delete;echo > /var/log/btmp; echo 'Cleaning trash';find /home*/*/.trash -type f -delete && find /home*/*/tmp -type f -name ".upload.*" -delete;echo 'Clearing softaculous backups'; find /home*/*/softaculous_backups -type f -delete;echo 'Purging def unread email';find /home*/*/mail/new -type f -ctime +5 -delete && find /home*/*/mail/.Trash -type f -delete;echo 'Truncating large error logs';ionice -n 3 -c 3 find /home*/*/public_html \( ! -path "/home/virtfs/" \) -name "error_log" -type f -size +20M -exec truncate -s1 {} \;" >> ${History}
+	;;
+	4 ) 
+		find /home*/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec du -hs {} \; | grep 'G\|M' |sort -n
+
+		echo "$(date && who) find /home/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec du -hs {} \; | grep 'G\|M' |sort -n" >> ${History}
+	;;
+	5 ) 
+		if [ -d /var/lib/mysql/eximstats ]; then
+			du -hs /var/lib/mysql/eximstats
+			echo "$(date && who) du -hs /var/lib/mysql/eximstats" >> ${History}
+			echo -n "would you like to truncate defers, failures, sends and smtp tables on eximstats database (y/n)? "
+		read i
+	                if echo "$i" | grep -iq "^y" ;then
+				mysql eximstats -e "truncate failures; truncate defers; truncate sends; truncate smtp;"
+				echo "$(date && who) mysql eximstats -e 'truncate failures; truncate defers; truncate sends; truncate smtp;'" >> ${History}
+			else
+				echo "No action taken"
+
+			fi
+
+		else
+
+			echo "Info: eximstats does not exist. No action taken"
+
+		fi
+	;;
+	6 ) 
+		find /var/lib/mysql -size +250M -exec du -hs {} \;
+		echo "$(date && who) find /var/lib/mysql -size +250M -exec du -hs {} \;" >> ${History}
+	;;
+	7 ) 
+		ionice -n 3 -c 3 find /home* \( ! -path "/home/virtfs/*" \) -type f -size +100M -exec du -hs {} \; |sort -n
+		echo "$(date && who) ionice -n 3 -c 3 find /home* \( ! -path "/home/virtfs/*" \) -type f -size +100M -exec du -hs {} \; |sort -n" >> ${History}
+	;;
+	8 )
+		find . -xdev -type f | cut -d "/" -f 2 | sort | uniq -c | sort -n > $inodetmp && cat $inodetmp | tail -n 10 && if [ -d "$(cat $inodetmp | tail -1 | awk '{print $2}')" ]; then
+		cd $(cat $inodetmp | tail -1 | awk '{print $2}') && echo && pwd
+
+		else
+
+			echo -e "\n There is no more directories that you can access... Directory with most files is: \n$(pwd)"
+
+		fi
+			echo "$(date && who) find . -xdev -type f | cut -d "/" -f 2 | sort | uniq -c | sort -n > $inodetmp && cat $inodetmp | tail -n 10 && cd $(cat $inodetmp | tail -1 | awk '{print $2}')" >> ${History}
+	;;
+	9 ) 
+		find /tmp/ -type f -mtime +0 -exec rm -v {} \;
+		echo "$(date && who) find /tmp/ -type f -mtime +0 -exec rm -v {} \;" >> ${History}
+	;;
+	10) 
+		find /home*/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec rm -frv {} \;
+		echo "$(date && who) find /home*/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec rm -frv {} \;" >> ${History}
+	;;
+	11) 
+		find /home* \( ! -path "/home/virtfs/*" \) -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -v {} \;
+		echo "$(date && who) find /home* \( ! -path "/home/virtfs/*" \) -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -v {} \;" >>  ${History}
+	;;
+	exit ) 
+		echo "GoodBye!!!" && exit
+	;;
+	0 ) 
+		echo "GoodBye!!!" && exit
+	;;
+        * ) echo "Please make your selection or press CTRL + C to exit"
+    esac
+done
+fi
