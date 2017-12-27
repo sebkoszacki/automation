@@ -1,0 +1,74 @@
+#!/bin/bash 
+
+if [ $(whoami) != 'root' ]; then
+        echo "Must be root to run $0"
+        exit 1;
+fi
+
+TMP1="/tmp/check_slash-$(date +'%Y%m%d')"
+TMP2="/tmp/check_var-$(date +%Y%m%d)"
+trap "{ rm -f $TMP1; rm -f $TMP2; }" EXIT
+
+echo "Please enter email address for NagiosAlert report:"
+
+read i
+
+if [[ $1 = "-s" ]]; then
+
+echo -e "$(who && date)\nHostname: $(hostname)\n" > $TMP1;
+
+echo -e "-- Space available on device before changes:\n\n$(df -h | awk '{print}')\n\n$(df -i | awk '{print}')\n\n$(du -h /var/lib/mysql/ --max-depth=1 | tail -1  | awk '{print}')\n$(du -hs /var/lib/mysql/eximstats | awk '{print}')" >> $TMP1;
+
+echo -e "---- Task performed:\n" >> $TMP1;
+
+yum clean all | awk '{print}' >>$TMP1;echo >> $TMP1;
+echo '- Gzip logs removed in /var/log/' >>$TMP1;echo >> $TMP1;find /var/log/ -type f -regex ".*[1-4]\(\.gz\)?" -delete && find /var/log/ -type f -regex ".*\(btmp\|secure\)-.*[^.]" -delete | awk '{print}' >>$TMP1;echo >> $TMP1;
+echo '- Large error_logs have been truncated' >>$TMP1;echo >> $TMP1;ionice -n 3 -c 3 find /home/*/public_html ! -path "/home/virtfs/" -name "error_log" -type f -size +20M -exec truncate -s1 {} \; | awk '{print}' >>$TMP1;echo >> $TMP1;
+echo '- Mail trash cans have been emptyied' >>$TMP1;echo >> $TMP1;find /home/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec rm -fr {} \; | awk '{print}' >> $TMP1;echo >> $TMP1;
+echo '- eximstats truncated' >>$TMP1;echo >> $TMP1;mysql eximstats -e "truncate failures; truncate defers; truncate sends; truncate smtp;" | awk '{print}' >> $TMP1;echo >> $TMP1;
+echo '- Softaculous backups older then 2 days have been removed' >>$TMP1;echo >> $TMP1;find /home*/*/softaculous_backups/ ! -path "/home*/virtfs/*" -name "*.gz" -mtime +2 -exec rm -fv {} \;|sort -n|awk '{print}' >> $TMP1;echo >> $TMP1;
+echo '- List of core dump files:' >> $TMP1;echo >> $TMP1;find /home ! -path "/home/virtfs/" -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -fv {} \; | awk '{print}' >> $TMP1;echo >> $TMP1;
+echo '- Additional files which may be considered as not necessary:' >>$TMP1;echo >> $TMP1;find /var/lib/mysql -size +250M -exec du -hs {} \; | awk '{print}' >> $TMP1;ionice -n 3 -c 3 find /home ! -path "/home/virtfs/*" -type f -size +100M -exec du -hs {} \;|grep '.gz\|.tar\|.zip\|core\|log'|sort -n | awk '{print}' >> $TMP1;
+
+
+echo -e "Space currently available on device:\n$(df -h | awk '{print}')\n" >>$TMP1;
+
+echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_slash\n$(cat $TMP1)" | sendmail ${i}
+
+fi
+
+if [[ $1 = "-v" ]]; then
+
+echo -e "$(who && date)\nHostname: $(hostname)\n-- Space available on device before changes:\n" > $TMP2;
+
+df -h | awk '{print}' >> $TMP2;
+
+	echo "\nFull file list in /var/log directory:\n - - - \n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
+
+	echo -e " - - - \nLooking into /var/log/ directory:\n - - - \nCurrent total size: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - " >> $TMP2
+
+		if [ -f /var/log/messages-$(date +%Y%m%d).gz ]; then
+
+			echo -e "Files been already compressed today." && echo "Today's date is: $(date)\n"
+
+		else
+
+			echo "Files being compressed now..." && echo " - - - " && find /var/log/ -maxdepth 1 -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec ls -a {} \; | grep "cron*\|messages*\|exim-*\|maillog*\|secure*\|spooler*\|yum.log*\|btmp*\|chkservd.log*" | cut -d'-' -f1 | sort -n | uniq -c | awk '{print $2}' >> $TMP2
+			for i in $(find /var/log/ -maxdepth 1 -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec ls -a {} \; | grep "cron*\|messages*\|exim-*\|maillog*\|secure*\|spooler*\|yum.log*\|btmp*\|chkservd.log*" | cut -d'-' -f1 | sort -n | uniq -c | awk '{print $2}'); do gzip -c ${i} > ${i}-$(date +%Y%m%d).gz && echo > ${i} ; done | awk '{print}' >> $TMP2
+
+		fi
+
+	echo -e "\n - - - \nList of current Gzipped files:\n - - - \n"
+	find /var/log/ -maxdepth 1 -name "*.gz" -exec du -hs {} \; | grep "cron*\|messages*\|exim-*\|maillog*\|secure*\|spooler*\|yum.log*\|btmp*\|chkservd.log*" | awk '{print}' >> $TMP2
+
+		echo -e "\n - - - \nFollowing Gzipped log files older then 30 days have been removed:\n - - - \n$(find /var/log/ -maxdepth 1 -name "*.gz" -mtime +30 -exec du -hs {} \; )\n"
+		find /var/log/ -maxdepth 1 -name "*.gz" -mtime +30 -exec rm -v {} \; | awk '{print}' >> $TMP2
+
+			echo -e"\n - - - \nList of log files which will be compressed as well:\n - - - \n$(find /var/log/ -maxdepth 1 -name "*-[0-9]*" -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec du -hs {} \; )\n" >> $TMP2
+			for g in $(find /var/log/ -maxdepth 1 -name "*-[0-9]*" -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec ls -a {} \; ); do gzip ${g}; done | awk '{print}' >> $TMP2
+
+				echo -e "\n - - - \nLooking into /var/log/ directory once again:\n - - - \nTotal size after changes: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - \nFull file list in /var/log/ directory:\n - - - \n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
+
+echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_var\n$(cat $TMP2)" | sendmail ${i}
+
+fi
