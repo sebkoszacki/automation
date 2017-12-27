@@ -85,10 +85,11 @@ menu5="5 - Restart mailman"
 menu6="6 - Delete 'Frozen' messages in exim mail queue"
 menu7="7 - Delete emails based on word included in header (user input required)"
 menu8="8 - Script: It finds spammer sending from dovecot / changes email account password (user input required)"
+main9="9 - Tailing process for exim in order to find spamming website"
 
 if [[ $1 ]]; then
 
-	if [[  $1 == "man" ]] || [[  $1 == "0" ]] || [[ $1 -ge "8" ]]
+	if [[  $1 == "man" ]] || [[  $1 == "0" ]] || [[ $1 -ge "9" ]]
 	then
 
 		echo -e "\nType 'feximtoolmenu man' for details on how to use this tool."
@@ -313,9 +314,19 @@ if [[ $1 ]]; then
 
                         fi
 
+                        if [[ $i == "9" ]]
+                        then
+
+                               	echo -e "\n${menu9}\n"
+				while sleep 1; do ps -C exim -fH ewwf | grep "/home" | tr ' ' '\n' | awk 'BEGIN{ found=0} /SERVER_PORT/{found=1} {if (found) print }' | sed '/sendmail/d' | sed -ne '1,30p' ;done
+                                echo -e "$(who) \nwhile sleep 1; do ps -C exim -fH ewwf | grep "/home" | tr ' ' 'n' | awk 'BEGIN{ found=0} /SERVER_PORT/{found=1} {if (found) print }' | sed '/sendmail/d' | sed -ne '1,30p' ;done" > ${temp}
+                                cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+                        fi
+
 		done
 
-	echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+	echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 
 else
 
@@ -329,7 +340,7 @@ else
 
 	echo "For history look into: ${History}"
 
-	echo -e "\n${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n"
+	echo -e "\n${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n${menu9}\n"
 
 	echo -e "To exit please type 'exit' or '0' or simply press CTRL + C\n"
 
@@ -351,7 +362,7 @@ else
 				exim -bp | tail	-n 1 | awk '{print $3}'	| xargs	exim -Mvb | head -n 50
 				echo -e "$(who) \nexim -bpc\nexim -bp | tail -n 10\nexim -bp | tail -n 1 | awk '{print $3}'| xargs exim -Mvh\nexim -bp | tail -n 1 | awk '{print $3}' | xargs exim -Mvb | head -n 50" > ${temp}
 				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+				echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 
 			;;
 
@@ -361,7 +372,7 @@ else
 				cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep -v /var/spool | awk -F"cwd=" '{print $2}' | sed '/^$/d' | grep "/home/" | awk '!/CronDaemon/' | tr ' ' '\n' |grep "/home/" | sort | uniq -c | sort -n | tail -n 15
 				echo -e "$(who) \ncat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep -v /var/spool | awk -F"cwd=" '{print $2}' | sed '/^$/d' | grep "/home/" | awk '!/CronDaemon/' | tr ' ' 'n' |grep "/home/" | sort | uniq -c | sort -n | tail -n 15" > ${temp}
 				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+				echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 
 			;;
 
@@ -371,7 +382,7 @@ else
 				cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep "A=dovecot_" | tr ' ' '\n' | grep "^A=dovecot_login" | cut -d':' -f2 | sort | uniq -c | sort -n
 				echo -e "$(who) \ncat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep "A=dovecot_" | tr ' ' 'n' | grep "^A=dovecot_login" | cut -d':' -f2 | sort | uniq -c | sort -n" > ${temp}
 				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+				echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 
 			;;
 
@@ -381,7 +392,7 @@ else
 				/scripts/restartsrv_spamd
 				echo -e "$(who) \n/scripts/restartsrv_spamd" > ${temp}
 				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+				echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 
 			;;
 
@@ -391,7 +402,7 @@ else
                                 /usr/local/cpanel/3rdparty/mailman/bin/mailmanctl restart
                                 echo -e	"$(who) \n/usr/local/cpanel/3rdparty/mailman/bin/mailmanctl restart" > ${temp}
                                 cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+				echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 
 			;;
 
@@ -401,7 +412,7 @@ else
                                 exim -bp|grep frozen|awk '{print $3}' |xargs exim -Mrm
                                 echo -e "$(who) \nexim -bp|grep frozen|awk '{print $3}' |xargs exim -Mrm" > ${temp}
                                 cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+				echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 
 			;;
 
@@ -423,25 +434,25 @@ else
 			                                        find /var/spool/exim/input -name "*-H" -exec grep -q "${b}" {} \; -print | while read MSG; do exim -Mrm $(basename ${MSG%-H}); done
 								echo -e "$(who) \nfind /var/spool/exim/input -name "*-H" -exec grep -q "${b}" {} \; -print | while read MSG; do exim -Mrm $(basename ${MSG%-H}); done" > ${temp}
 								cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-								echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+								echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 						else
 
 							echo -e "$(who) \nNo emails have been removed" > ${temp}
 							cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-							echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+							echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
 
 	                                        fi
         	                        else
                 	                        echo "You have not used enough characters. Please use 4 or more characters"
 						echo -e "$(who) \nNo emails have been removed" > ${temp}
 						cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-						echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+						echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
                         	        fi
 
 		                else
                                         echo -e "$(who) \nNo emails have been removed" > ${temp}
                                         cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
-					echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+					echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
         	       	 	fi
 
 			;;
@@ -548,6 +559,16 @@ else
                                 cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
 
 				fi
+			;;
+
+			9)
+
+                               	echo -e "\n${menu9}\n"
+				while sleep 1; do ps -C exim -fH ewwf | grep "/home" | tr ' ' '\n' | awk 'BEGIN{ found=0} /SERVER_PORT/{found=1} {if (found) print }' | sed '/sendmail/d' | sed -ne '1,30p' ;done
+                                echo -e "$(who) \nwhile sleep 1; do ps -C exim -fH ewwf | grep "/home" | tr ' ' 'n' | awk 'BEGIN{ found=0} /SERVER_PORT/{found=1} {if (found) print }' | sed '/sendmail/d' | sed -ne '1,30p' ;done" > ${temp}
+                                cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+				echo -e "\nList of bash commands performed:\n$(cat ${temp2})"
+
 			;;
 
 			0)
