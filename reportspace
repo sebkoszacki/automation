@@ -39,11 +39,11 @@ fi
 
 if [[ $1 = "-v" ]]; then
 
-echo -e "$(who && date)\nHostname: $(hostname)\n-- Space available on device before changes:\n" > $TMP2;
+echo -e "$(who && date)\nHostname: $(hostname)\n\n-- Space available on device before changes:\n" > $TMP2;
 
 df -h | awk '{print}' >> $TMP2;
 
-	echo "\nFull file list in /var/log directory:\n - - - \n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
+	echo "\nFull file list in /var/log directory:\n - - - \n\n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
 
 	echo -e " - - - \nLooking into /var/log/ directory:\n - - - \nCurrent total size: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - \n" >> $TMP2
 
@@ -67,7 +67,7 @@ df -h | awk '{print}' >> $TMP2;
 			echo -e "\n - - - \nList of log files which will be compressed as well:\n - - - \n$(find /var/log/ -maxdepth 1 -name "*-[0-9]*" -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec du -hs {} \; )\n" >> $TMP2
 			for g in $(find /var/log/ -maxdepth 1 -name "*-[0-9]*" -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec ls -a {} \; ); do gzip ${g}; done | awk '{print}' >> $TMP2
 
-				echo -e "\n - - - \nLooking into /var/log/ directory once again:\n - - - \nTotal size after changes: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - \nFull file list in /var/log/ directory:\n - - - \n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
+				echo -e "\n - - - \nLooking into /var/log/ directory once again:\n - - - \nTotal size after changes: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - \nFull file list in /var/log/ directory:\n - - - \n\n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
 
 echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_var\n$(cat $TMP2)" | sendmail ${i}
 
