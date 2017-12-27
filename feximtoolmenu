@@ -107,7 +107,7 @@ if [[ $1 ]]; then
 
                                 echo -e "\nPlease enter input as follow, example: 'feximtoolmenu 1 2 3' (please note that selection can be mixed and do not have to be in order)\nAlso 'feximtoolmenu' can be accessed by simply typing in 'feximtoolmenu'\n"
 
-                                echo -e "${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n"
+                                echo -e "${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n${menu9}\n"
 
                         fi
 
