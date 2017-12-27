@@ -1,0 +1,573 @@
+#!/bin/sh
+
+if [ $(whoami) != 'root' ]; then
+        echo "Must be root to run $0"
+        exit 1;
+fi
+
+# checks if server / vps is not a compila server
+
+		if [[ $(hostname) == *".sovdns.com" ]]; then
+			echo -e "\nBrand: \nVidahost"
+
+		else
+
+# list of available brands names set in array
+
+		brandarry=(
+
+			"Tsohost"
+			"Vidahost"
+			"DataFlame"
+			"Redcoruna"
+			"Evohosting"
+
+					);
+
+# checks cluster for brand
+
+cluster="$(find /var/cpanel/cluster/root/config -type f \( ! -name "*.cache" ! -name "*-dnsrole" \)  -exec cat {} \; | grep -E "[a-zA-Z][.][a-zA-Z]" | cut -d'=' -f2 | cut -d'#' -f1 | sed '/^\s*$/d')"
+
+	echo -e "\nAvailable DNS cluster/s: \n${cluster}"
+
+		echo -e "\nBrand/s:"
+
+# selects brand by known cluster
+
+	if [[ ${cluster} == *".tsohost.co.uk"* ]]; then
+
+		echo ${brandarry[0]}
+
+	fi
+
+	if [[ ${cluster} == *".footholds.net"* ]]; then
+
+		echo ${brandarry[1]}
+
+	fi
+
+	if [[ ${cluster} == *".dataflame"* ]]; then
+
+		echo ${brandarry[2]}
+
+	fi
+
+        if [[ ${cluster} == *".redcoruna"* ]]; then
+
+	        echo ${brandarry[3]}
+
+        fi
+
+        if [[ ${cluster} == *".3v0"* ]]; then
+
+	        echo ${brandarry[4]}
+
+        fi
+
+		fi
+
+# Storage files:
+
+History="/root/.fmenus_bash_history"
+temp="/tmp/temp-$(date +%Y%m%d).log"
+temp2="/tmp/temp2-$(date +%Y%m%d).log"
+trap "{ rm -f $temp; rm -f $temp2; }" EXIT
+
+touch $temp; touch $temp2;
+
+# Available menu list:
+
+menu1="1 - check exim queue and most recent senders"
+menu2="2 - Number of emails sent from /home directory based on today's date $(date +%d/%m/%Y)"
+menu3="3 - Number of emails sent from active email accounts based on todays's date $(date +%d/%m/%Y)"
+menu4="4 - Restart spamd client"
+menu5="5 - Restart mailman"
+menu6="6 - Delete 'Frozen' messages in exim mail queue"
+menu7="7 - Delete emails based on word included in header (user input required)"
+menu8="8 - Script: It finds spammer sending from dovecot / changes email account password (user input required)"
+
+if [[ $1 ]]; then
+
+	if [[  $1 == "man" ]] || [[  $1 == "0" ]] || [[ $1 -ge "8" ]]
+	then
+
+		echo -e "\nType 'feximtoolmenu man' for details on how to use this tool."
+
+	fi
+
+		echo -e "\n${info}"
+
+			for i in $(echo "$@" | tr ' ' '\n' | awk '!x[$0]++');do
+
+                        if [[ $i == "man" ]]
+                        then
+
+                            	echo -e "\nFor history look into: ${History}"
+
+                                echo -e "\nPlease enter input as follow, example: 'feximtoolmenu 1 2 3' (please note that selection can be mixed and do not have to be in order)\nAlso 'feximtoolmenu' can be accessed by simply typing in 'feximtoolmenu'\n"
+
+                                echo -e "${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n"
+
+                        fi
+
+			if [[ $i == "1" ]]
+			then
+
+				echo -e "\n${menu1}\n"
+				exim -bpc
+				exim -bp | tail -n 10 
+				exim -bp | tail -n 1 | awk '{print $3}' | xargs exim -Mvh 
+				exim -bp | tail	-n 1 | awk '{print $3}'	| xargs	exim -Mvb | head -n 50 
+				echo -e "$(who) \nexim -bpc\nexim -bp | tail -n 10\nexim -bp | tail -n 1 | awk '{print $3}'| xargs exim -Mvh\nexim -bp | tail -n 1 | awk '{print $3}' | xargs exim -Mvb | head -n 50" > ${temp}
+				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+			fi
+
+                       	if [[ $i == "2" ]]
+			then
+
+                               	echo -e "\n${menu2}\n"
+				cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep -v /var/spool | awk -F"cwd=" '{print $2}' | sed '/^$/d' | grep "/home/" | awk '!/CronDaemon/' | tr ' ' '\n' |grep "/home/" | sort | uniq -c | sort -n | tail -n 15
+				echo -e "$(who) \ncat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep -v /var/spool | awk -F"cwd=" '{print $2}' | sed '/^$/d' | grep "/home/" | awk '!/CronDaemon/' | tr ' ' 'n' |grep "/home/" | sort | uniq -c | sort -n | tail -n 15" > ${temp}
+				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+			fi
+
+			if [[ $i == "3" ]]
+			then
+
+				echo -e "\n${menu3}\n"
+				cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep "A=dovecot_" | tr ' ' '\n' | grep "^A=dovecot_login" | cut -d':' -f2 | sort | uniq -c | sort -n
+				echo -e "$(who) \ncat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep "A=dovecot_" | tr ' ' 'n' | grep "^A=dovecot_login" | cut -d':' -f2 | sort | uniq -c | sort -n" > ${temp}
+				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+			fi
+
+			if [[ $i == "4" ]]
+			then
+				echo -e "\n${menu4}\n"
+				/scripts/restartsrv_spamd
+				echo -e "$(who) \n/scripts/restartsrv_spamd" > ${temp}
+				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+			fi
+
+                        if [[ $i == "5" ]]
+                        then
+                            	echo -e "\n${menu5}\n"
+                                /usr/local/cpanel/3rdparty/mailman/bin/mailmanctl restart
+                                echo -e	"$(who) \n/usr/local/cpanel/3rdparty/mailman/bin/mailmanctl restart" > ${temp}
+                                cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+                        fi
+
+                        if [[ $i == "6" ]]
+                        then
+                            	echo -e "\n${menu6}\n"
+                                exim -bp|grep frozen|awk '{print $3}' |xargs exim -Mrm
+                                echo -e "$(who) \nexim -bp|grep frozen|awk '{print $3}' |xargs exim -Mrm" > ${temp}
+                                cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+                        fi
+
+                        if [[ $i == "7" ]]
+                        then
+                            	echo -e "\n${menu7}\n"
+                                
+				echo -n "would you like to remove emails from exim queue list using any word included in header message (y/n)? "
+                		read i
+			                if echo "$i" | grep -iq "^y" ;then
+			                echo "please enter word you would like to search in email header and remove. Word must be at least 4 characters long"
+			                read b
+			                c1="$(echo -n $b | wc -c)"
+				                if [[ $c1 -gt 3 ]] ; then
+				                        echo -n "You are about to remove $(find /var/spool/exim/input -name "*-H" -exec grep -q "${b}" {} \; -print | wc -l) emails out of $(find /var/spool/exim/input -name "*-H" | wc -l). Would you like to continue (y/n)? "
+				                        read i
+                                			        if echo "$i" | grep -iq "^y" ; then
+			                                        find /var/spool/exim/input -name "*-H" -exec grep -q "${b}" {} \; -print | while read MSG; do exim -Mrm $(basename ${MSG%-H}); done
+								echo -e "$(who) \nfind /var/spool/exim/input -name "*-H" -exec grep -q "${b}" {} \; -print | while read MSG; do exim -Mrm $(basename ${MSG%-H}); done" > ${temp}
+								cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+						else
+
+							echo -e "$(who) \nNo emails have been removed" > ${temp}
+							cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+		
+	                                        fi
+        	                        else
+                	                        echo "You have not used enough characters. Please use 4 or more characters"
+						echo -e "$(who) \nNo emails have been removed" > ${temp}
+						cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+                        	        fi
+
+		                else
+                                        echo -e "$(who) \nNo emails have been removed" > ${temp}
+                                        cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+        	       	 	fi
+
+                        fi
+
+                        if [[ $i == "8" ]]
+                        then
+                            	echo -e "\n${menu8}\n"
+
+					# checks for spammer email account based on exim_mainlog and email number sent since midnight
+					for i in $(cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" |  grep A=dovecot_ | grep ":" | grep "@"  | sed '/authenticator/d' | sed 's/^.* A=dovecot_[a-z]*:\([^ ]*\).*$/\1/' | sort -n | uniq -c | sort -n | awk '{print $2}'); do if [[ $(exiqgrep -f ${i} -i | wc -l) -ge 0 ]]; then echo ${i} && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvh | head -40 && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvb | head -50 ; fi ; done
+
+						# action part of script for compromised email account
+
+						echo -e "\nPlease enter email account you wish to change password for: (to exit press CTRL + C)"
+						read emailaccount
+
+						function set_variables {
+
+						name=${name}
+						brand=${brand}
+						user=`echo $email |cut -d@ -f1`
+						domain=`echo $email |cut -d@ -f2`
+						cpuser=`grep ^${domain} /etc/userdomains | cut -d" " -f2`
+						}
+
+					                if [ -e /home*/$cpuser/.contactemail ]; then
+					                       	contact=`cat /home*/$cpuser/.contactemail`
+					               	else
+					                       	contact="Contact e-mail Not Found"
+					               	fi
+
+						function validate {
+
+						if [ -z $domain ]
+						then
+							echo "You didn't enter a valid email address. user@domain.tld"
+							exit 0
+						fi
+
+						if [ -z $cpuser ]
+						then
+							echo "That domain does not exist on this server."
+							echo "E-mail password not changed!"
+							exit 0
+						fi
+
+						if [ ! -e /home*/$cpuser/etc/$domain ]
+						then
+							echo "That domain does not exist on this server."
+							echo "E-mail password not changed!"
+							exit 0
+						fi
+
+						if [ -z `grep $user /home*/$cpuser/etc/$domain/shadow` ]
+						then
+							echo "User does not exist for that domain."
+							echo "E-mail password not changed!"
+							exit 0
+						fi
+
+						change_pw
+						}
+
+						function change_pw {
+
+						if [ -z $pass ]
+						then
+							/usr/local/apache/bin/htpasswd /home*/$cpuser/etc/$domain/shadow $user &> /dev/null
+						else
+							/usr/local/apache/bin/htpasswd -b /home*/$cpuser/etc/$domain/shadow $user $pass &> /dev/null
+						fi
+
+							sed -i "/$user/s|$|:::::::|" /home*/$cpuser/etc/$domain/shadow
+
+							echo "E-mail password changed for $email"
+							echo "Password set to: $pass"
+						                echo "cPanel user: ${cpuser}"
+						                echo "Domain: ${domain}"
+								echo "Contact: ${contact}"
+
+						/scripts/restartsrv_exim
+
+						}
+
+						if [ ${emailaccount} ]
+						then
+
+							email=$emailaccount
+							pass=`date |md5sum|cut -b 1-16`
+
+						set_variables
+							validate
+
+							echo "Would you like to delete messages sent from ${emailaccount} in queue? [Y,n]"
+							read input
+								if [[ $input == "Y" || $input == "y" ]]; then
+									exiqgrep -f ${emailaccount} -i | xargs exim -Mrm
+									echo "Done"
+								else
+								        echo "No action taken"
+								fi
+
+				
+			fi
+
+                                echo -e "$(who) \nScript number 8 'feximtoolmenu'" > ${temp}
+                                cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+                        fi
+
+		done
+
+	echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+
+else
+
+	echo
+	echo " - - - - - - - - - - - - - - - - - - - - - - - - "
+        echo " -  _  - Welcome to Fight Spammers  menu -  _  - "
+        echo " - - ^ - -        Version 8438         - - ^ - - "
+        echo " - - - - - - - - - - - - - - - - - - - - - - - - "
+	echo -e "\nToday's date is: $(date)"
+	echo -e "\nUsers logged in: \n$(who)"
+
+	echo "For history look into: ${History}"
+
+	echo -e "\n${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n"
+
+	echo -e "To exit please type 'exit' or '0' or simply press CTRL + C\n"
+
+
+
+		selection=
+		until [ "$selection" = "exit" ]; do
+		echo -n "Enter selection: "
+		    read selection
+		    echo
+		    case $selection in
+
+			1)
+
+				echo -e "\n${menu1}\n"
+				exim -bpc
+				exim -bp | tail -n 10
+				exim -bp | tail -n 1 | awk '{print $3}' | xargs exim -Mvh
+				exim -bp | tail	-n 1 | awk '{print $3}'	| xargs	exim -Mvb | head -n 50
+				echo -e "$(who) \nexim -bpc\nexim -bp | tail -n 10\nexim -bp | tail -n 1 | awk '{print $3}'| xargs exim -Mvh\nexim -bp | tail -n 1 | awk '{print $3}' | xargs exim -Mvb | head -n 50" > ${temp}
+				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+
+			;;
+
+			2)
+
+                               	echo -e "\n${menu2}\n"
+				cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep -v /var/spool | awk -F"cwd=" '{print $2}' | sed '/^$/d' | grep "/home/" | awk '!/CronDaemon/' | tr ' ' '\n' |grep "/home/" | sort | uniq -c | sort -n | tail -n 15
+				echo -e "$(who) \ncat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep -v /var/spool | awk -F"cwd=" '{print $2}' | sed '/^$/d' | grep "/home/" | awk '!/CronDaemon/' | tr ' ' 'n' |grep "/home/" | sort | uniq -c | sort -n | tail -n 15" > ${temp}
+				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+
+			;;
+
+			3)
+
+				echo -e "\n${menu3}\n"
+				cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep "A=dovecot_" | tr ' ' '\n' | grep "^A=dovecot_login" | cut -d':' -f2 | sort | uniq -c | sort -n
+				echo -e "$(who) \ncat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" | grep "A=dovecot_" | tr ' ' 'n' | grep "^A=dovecot_login" | cut -d':' -f2 | sort | uniq -c | sort -n" > ${temp}
+				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+
+			;;
+
+			4)
+
+				echo -e "\n${menu4}\n"
+				/scripts/restartsrv_spamd
+				echo -e "$(who) \n/scripts/restartsrv_spamd" > ${temp}
+				cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+
+			;;
+
+			5)
+
+                            	echo -e "\n${menu5}\n"
+                                /usr/local/cpanel/3rdparty/mailman/bin/mailmanctl restart
+                                echo -e	"$(who) \n/usr/local/cpanel/3rdparty/mailman/bin/mailmanctl restart" > ${temp}
+                                cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+
+			;;
+
+			6)
+
+                            	echo -e "\n${menu6}\n"
+                                exim -bp|grep frozen|awk '{print $3}' |xargs exim -Mrm
+                                echo -e "$(who) \nexim -bp|grep frozen|awk '{print $3}' |xargs exim -Mrm" > ${temp}
+                                cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+				echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+
+			;;
+
+
+			7)
+
+                            	echo -e "\n${menu7}\n"
+
+				echo -n "would you like to remove emails from exim queue list using any word included in header message (y/n)? "
+                		read i
+			                if echo "$i" | grep -iq "^y" ;then
+			                echo "please enter word you would like to search in email header and remove. Word must be at least 4 characters long"
+			                read b
+			                c1="$(echo -n $b | wc -c)"
+				                if [[ $c1 -gt 3 ]] ; then
+				                        echo -n "You are about to remove $(find /var/spool/exim/input -name "*-H" -exec grep -q "${b}" {} \; -print | wc -l) emails out of $(find /var/spool/exim/input -name "*-H" | wc -l). Would you like to continue (y/n)? "
+				                        read i
+                                			        if echo "$i" | grep -iq "^y" ; then
+			                                        find /var/spool/exim/input -name "*-H" -exec grep -q "${b}" {} \; -print | while read MSG; do exim -Mrm $(basename ${MSG%-H}); done
+								echo -e "$(who) \nfind /var/spool/exim/input -name "*-H" -exec grep -q "${b}" {} \; -print | while read MSG; do exim -Mrm $(basename ${MSG%-H}); done" > ${temp}
+								cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+								echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+						else
+
+							echo -e "$(who) \nNo emails have been removed" > ${temp}
+							cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+							echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+
+	                                        fi
+        	                        else
+                	                        echo "You have not used enough characters. Please use 4 or more characters"
+						echo -e "$(who) \nNo emails have been removed" > ${temp}
+						cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+						echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+                        	        fi
+
+		                else
+                                        echo -e "$(who) \nNo emails have been removed" > ${temp}
+                                        cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+					echo -e "\nList of bash commands performed:\n\n$(cat ${temp2})"
+        	       	 	fi
+
+			;;
+
+			8)
+
+                            	echo -e "\n${menu8}\n"
+
+					# checks for spammer email account based on exim_mainlog and email number sent since midnight
+					for i in $(cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" |  grep A=dovecot_ | grep ":" | grep "@"  | sed '/authenticator/d' | sed 's/^.* A=dovecot_[a-z]*:\([^ ]*\).*$/\1/' | sort -n | uniq -c | sort -n | awk '{print $2}'); do if [[ $(exiqgrep -f ${i} -i | wc -l) -ge 0 ]]; then echo ${i} && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvh | head -40 && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvb | head -50 ; fi ; done
+
+						# action part of script for compromised email account
+
+						echo -e "\nPlease enter email account you wish to change password for: (to exit press CTRL + C)"
+						read emailaccount
+
+						function set_variables {
+
+						name=${name}
+						brand=${brand}
+						user=`echo $email |cut -d@ -f1`
+						domain=`echo $email |cut -d@ -f2`
+						cpuser=`grep ^${domain} /etc/userdomains | cut -d" " -f2`
+						}
+
+					                if [ -e /home*/$cpuser/.contactemail ]; then
+					                       	contact=`cat /home*/$cpuser/.contactemail`
+					               	else
+					                       	contact="Contact e-mail Not Found"
+					               	fi
+
+						function validate {
+
+						if [ -z $domain ]
+						then
+							echo "You didn't enter a valid email address. user@domain.tld"
+							exit 0
+						fi
+
+						if [ -z $cpuser ]
+						then
+							echo "That domain does not exist on this server."
+							echo "E-mail password not changed!"
+							exit 0
+						fi
+
+						if [ ! -e /home*/$cpuser/etc/$domain ]
+						then
+							echo "That domain does not exist on this server."
+							echo "E-mail password not changed!"
+							exit 0
+						fi
+
+						if [ -z `grep $user /home*/$cpuser/etc/$domain/shadow` ]
+						then
+							echo "User does not exist for that domain."
+							echo "E-mail password not changed!"
+							exit 0
+						fi
+
+						change_pw
+						}
+
+						function change_pw {
+
+						if [ -z $pass ]
+						then
+							/usr/local/apache/bin/htpasswd /home*/$cpuser/etc/$domain/shadow $user &> /dev/null
+						else
+							/usr/local/apache/bin/htpasswd -b /home*/$cpuser/etc/$domain/shadow $user $pass &> /dev/null
+						fi
+
+							sed -i "/$user/s|$|:::::::|" /home*/$cpuser/etc/$domain/shadow
+
+							echo "E-mail password changed for $email"
+							echo "Password set to: $pass"
+						                echo "cPanel user: ${cpuser}"
+						                echo "Domain: ${domain}"
+								echo "Contact: ${contact}"
+
+						/scripts/restartsrv_exim
+
+						}
+
+						if [ ${emailaccount} ]
+						then
+
+							email=$emailaccount
+							pass=`date |md5sum|cut -b 1-16`
+
+						set_variables
+							validate
+
+							echo "Would you like to delete messages sent from ${emailaccount} in queue? [Y,n]"
+							read input
+								if [[ $input == "Y" || $input == "y" ]]; then
+									exiqgrep -f ${emailaccount} -i | xargs exim -Mrm
+									echo "Done"
+								else
+								        echo "No action taken"
+								fi
+
+                                echo -e "$(who) \nScript number 8 'feximtoolmenu'" > ${temp}
+                                cat ${temp} >> ${History} && cat ${temp} | awk 'FNR > 1' >> ${temp2}
+
+				fi
+			;;
+
+			0)
+
+				echo "Goodbye!!!" && exit
+
+			;;
+
+                        exit)
+
+                                echo "Goodbye!!!" && exit
+
+                        ;;
+
+			* ) 
+
+				echo "Please make your selection or press CTRL + C to exit"
+
+			esac
+
+	done
+
+fi
