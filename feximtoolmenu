@@ -85,7 +85,7 @@ menu5="5 - Restart mailman"
 menu6="6 - Delete 'Frozen' messages in exim mail queue"
 menu7="7 - Delete emails based on word included in header (user input required)"
 menu8="8 - Script: It finds spammer sending from dovecot / changes email account password (user input required)"
-main9="9 - Tailing process for exim in order to find spamming website"
+menu9="9 - Tailing process for exim in order to find spamming website"
 
 if [[ $1 ]]; then
 
