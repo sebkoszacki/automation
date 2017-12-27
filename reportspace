@@ -45,26 +45,26 @@ df -h | awk '{print}' >> $TMP2;
 
 	echo "\nFull file list in /var/log directory:\n - - - \n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
 
-	echo -e " - - - \nLooking into /var/log/ directory:\n - - - \nCurrent total size: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - " >> $TMP2
+	echo -e " - - - \nLooking into /var/log/ directory:\n - - - \nCurrent total size: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - \n" >> $TMP2
 
 		if [ -f /var/log/messages-$(date +%Y%m%d).gz ]; then
 
-			echo -e "Files been already compressed today." && echo "Today's date is: $(date)\n"
+			echo -e "Files been already compressed today." && echo "Today's date is: $(date)\n" >> $TMP2
 
 		else
 
-			echo "Files being compressed now..." && echo " - - - " && find /var/log/ -maxdepth 1 -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec ls -a {} \; | grep "cron*\|messages*\|exim-*\|maillog*\|secure*\|spooler*\|yum.log*\|btmp*\|chkservd.log*" | cut -d'-' -f1 | sort -n | uniq -c | awk '{print $2}' >> $TMP2
+			echo -e "Files being compressed now...\n - - - \n$(find /var/log/ -maxdepth 1 -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec ls -a {} \; | grep "cron*\|messages*\|exim-*\|maillog*\|secure*\|spooler*\|yum.log*\|btmp*\|chkservd.log*" | cut -d'-' -f1 | sort -n | uniq -c | awk '{print $2}')" >> $TMP2
 			for i in $(find /var/log/ -maxdepth 1 -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec ls -a {} \; | grep "cron*\|messages*\|exim-*\|maillog*\|secure*\|spooler*\|yum.log*\|btmp*\|chkservd.log*" | cut -d'-' -f1 | sort -n | uniq -c | awk '{print $2}'); do gzip -c ${i} > ${i}-$(date +%Y%m%d).gz && echo > ${i} ; done | awk '{print}' >> $TMP2
 
 		fi
 
-	echo -e "\n - - - \nList of current Gzipped files:\n - - - \n"
+	echo -e "\n - - - \nList of current Gzipped files:\n - - - \n" >> $TMP2
 	find /var/log/ -maxdepth 1 -name "*.gz" -exec du -hs {} \; | grep "cron*\|messages*\|exim-*\|maillog*\|secure*\|spooler*\|yum.log*\|btmp*\|chkservd.log*" | awk '{print}' >> $TMP2
 
-		echo -e "\n - - - \nFollowing Gzipped log files older then 30 days have been removed:\n - - - \n$(find /var/log/ -maxdepth 1 -name "*.gz" -mtime +30 -exec du -hs {} \; )\n"
+		echo -e "\n - - - \nFollowing Gzipped log files older then 30 days have been removed:\n - - - \n$(find /var/log/ -maxdepth 1 -name "*.gz" -mtime +30 -exec du -hs {} \; )\n" >> $TMP2
 		find /var/log/ -maxdepth 1 -name "*.gz" -mtime +30 -exec rm -v {} \; | awk '{print}' >> $TMP2
 
-			echo -e"\n - - - \nList of log files which will be compressed as well:\n - - - \n$(find /var/log/ -maxdepth 1 -name "*-[0-9]*" -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec du -hs {} \; )\n" >> $TMP2
+			echo -e "\n - - - \nList of log files which will be compressed as well:\n - - - \n$(find /var/log/ -maxdepth 1 -name "*-[0-9]*" -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec du -hs {} \; )\n" >> $TMP2
 			for g in $(find /var/log/ -maxdepth 1 -name "*-[0-9]*" -type f \( ! -iname "*.gz" ! -iname "*.tar.gz" \) -exec ls -a {} \; ); do gzip ${g}; done | awk '{print}' >> $TMP2
 
 				echo -e "\n - - - \nLooking into /var/log/ directory once again:\n - - - \nTotal size after changes: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - \nFull file list in /var/log/ directory:\n - - - \n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
