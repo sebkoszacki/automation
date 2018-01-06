@@ -69,6 +69,7 @@ for i in $(echo "$@" | tr ' ' '\n' | awk '!x[$0]++');do
 		echo 'Clearing softaculous backups';find /home*/*/softaculous_backups -maxdepth 1 -type f -delete ;
 		echo 'Purging def unread email';find /home*/*/mail/new -type f -ctime +5 -delete && find /home*/*/mail/.Trash -type f -delete;
 		echo 'Truncating large error logs';ionice -n 3 -c 3 find /home*/*/public_html \( ! -path "/home/virtfs/" \) -name "error_log" -type f -size +20M -exec truncate -s1 {} \;
+		echo 'Remove manually created backups'; for user in $(/bin/ls -A /var/cpanel/users); do rm -fv /home/$user/backup-*$user.tar.gz ; done
 
 		echo "$(date && who) yum clean all; echo 'Removing logs';find /var/log/ -type f -regex ".*[1-4]\(\.gz\)?" -delete && find /var/log/ -type f -regex ".*\(btmp\|secure\)-.*[^.]" -delete;echo > /var/log/btmp; echo 'Cleaning trash';find /home*/*/.trash -type f -delete && find /home*/*/tmp -type f -name ".upload.*" -delete;echo 'Clearing softaculous backups'; find /home*/*/softaculous_backups -type f -delete;echo 'Purging def unread email';find /home*/*/mail/new -type f -ctime +5 -delete && find /home*/*/mail/.Trash -type f -delete;echo 'Truncating large error logs';ionice -n 3 -c 3 find /home*/*/public_html \( ! -path "/home/virtfs/" \) -name "error_log" -type f -size +20M -exec truncate -s1 {} \;" >> ${History}
 
