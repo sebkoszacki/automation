@@ -38,6 +38,7 @@ echo -e "Space currently available on device:\n$(df -h | awk '{print}')\n" >>$TM
 
 	if [[ $2 ]]; then
 		echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_slash\n$(cat $TMP1)" | sendmail $2
+			cat $TMP1
 	else
 		cat $TMP1
 	fi	
@@ -78,6 +79,7 @@ df -h | awk '{print}' >> $TMP2;
 
         if [[ $2 ]]; then
 	        echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_var\n$(cat $TMP2)" | sendmail $2
+			cat $TMP1
         else
                 cat $TMP1
         fi
