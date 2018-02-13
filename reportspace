@@ -16,10 +16,6 @@ echo -e "In order to use tool please enter 'sh reportspace [Option] [email]'\nSe
 
 fi
 
-#echo "Please enter email address for NagiosAlert report:"
-
-#read i
-
 if [[ $1 = "-s" ]]; then
 
 echo -e "$(who && date)\nHostname: $(hostname)\n" > $TMP1;
@@ -42,6 +38,8 @@ echo -e "Space currently available on device:\n$(df -h | awk '{print}')\n" >>$TM
 
 	if [[ $2 ]]; then
 		echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_slash\n$(cat $TMP1)" | sendmail $2
+	else
+		cat $TMP1
 	fi	
 
 fi
@@ -79,7 +77,9 @@ df -h | awk '{print}' >> $TMP2;
 				echo -e "\n - - - \nLooking into /var/log/ directory once again:\n - - - \nTotal size after changes: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - \nFull file list in /var/log/ directory:\n - - - \n\n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
 
         if [[ $2 ]]; then
-	        echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_slash\n$(cat $TMP2)" | sendmail $2
+	        echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_var\n$(cat $TMP2)" | sendmail $2
+        else
+                cat $TMP1
         fi
 
 fi
