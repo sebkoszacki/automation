@@ -79,9 +79,9 @@ df -h | awk '{print}' >> $TMP2;
 
         if [[ $2 ]]; then
 	        echo -e "Subject: NagiosAlerts: $(hostname | cut -d'.' -f1) - check_var\n$(cat $TMP2)" | sendmail $2
-			cat $TMP1
+			cat $TMP2
         else
-                cat $TMP1
+                cat $TMP2
         fi
 
 fi
