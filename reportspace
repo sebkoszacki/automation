@@ -51,7 +51,7 @@ echo -e "$(who && date)\nHostname: $(hostname)\n\n-- Space available on device b
 
 df -h | awk '{print}' >> $TMP2;
 
-	echo "\nFull file list in /var/log directory:\n - - - \n\n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
+	echo -e "\nFull file list in /var/log directory:\n - - - \n\n$(find /var/log/ -maxdepth 1 -type f -exec du -hs {} \;)\n" >> $TMP2
 
 	echo -e " - - - \nLooking into /var/log/ directory:\n - - - \nCurrent total size: $(du -hs /var/log | tail -1 | awk '{print $1}')\n - - - \n" >> $TMP2
 
