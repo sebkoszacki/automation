@@ -7,7 +7,8 @@ fi
 
 TMP1="/tmp/check_slash-$(date +'%Y%m%d')"
 TMP2="/tmp/check_var-$(date +%Y%m%d)"
-trap "{ rm -f $TMP1; rm -f $TMP2; }" EXIT
+TMP3="/tmp/temp_call-$(date +%Y%m%d)"
+trap "{ rm -f $TMP1; rm -f $TMP2; rm -f $TMP3; }" EXIT
 
 if [[  $1 == "man" ]] && [[ "$1" != "-v" ]] && [[ "$1" != "-s" ]] || [[ "$1" == ""  ]]
 then
@@ -25,13 +26,13 @@ echo -e "-- Space available on device before changes:\n\n$(df -h | awk '{print}'
 echo -e "---- Task performed:\n" >> $TMP1;
 
 yum clean all | awk '{print}' >>$TMP1;echo >> $TMP1;
-echo '- Gzip logs removed in /var/log/' >>$TMP1;echo >> $TMP1;find /var/log/ -type f -regex ".*[1-4]\(\.gz\)?" -delete && find /var/log/ -type f -regex ".*\(btmp\|secure\)-.*[^.]" -delete | awk '{print}' >>$TMP1;echo >> $TMP1;
-echo '- Large error_logs have been truncated' >>$TMP1;echo >> $TMP1;ionice -n 3 -c 3 find /home/*/public_html ! -path "/home/virtfs/" -name "error_log" -type f -size +20M -exec truncate -s1 {} \; | awk '{print}' >>$TMP1;echo >> $TMP1;
-echo '- Mail trash cans have been emptyied' >>$TMP1;echo >> $TMP1;find /home/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec rm -fr {} \; | awk '{print}' >> $TMP1;echo >> $TMP1;
-echo '- eximstats truncated' >>$TMP1;echo >> $TMP1;mysql eximstats -e "truncate failures; truncate defers; truncate sends; truncate smtp;" | awk '{print}' >> $TMP1;echo >> $TMP1;
-echo '- Softaculous backups older then 2 days have been removed' >>$TMP1;echo >> $TMP1;find /home*/*/softaculous_backups/ ! -path "/home*/virtfs/*" -name "*.gz" -mtime +2 -exec rm -fv {} \;|sort -n|awk '{print}' >> $TMP1;echo >> $TMP1;
-echo '- List of core dump files:' >> $TMP1;echo >> $TMP1;find /home ! -path "/home/virtfs/" -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -fv {} \; | awk '{print}' >> $TMP1;echo >> $TMP1;
-echo '- Additional files which may be considered as not necessary:' >>$TMP1;echo >> $TMP1;find /var/lib/mysql -size +250M -exec du -hs {} \; | awk '{print}' >> $TMP1;ionice -n 3 -c 3 find /home ! -path "/home/virtfs/*" -type f -size +100M -exec du -hs {} \;|grep '.gz\|.tar\|.zip\|core\|log'|sort -n | awk '{print}' >> $TMP1;
+echo '- Gzip logs removed in /var/log/' >>$TMP1;echo >> $TMP1;find /var/log/ -type f -regex ".*[1-4]\(\.gz\)?" -delete && find /var/log/ -type f -regex ".*\(btmp\|secure\)-.*[^.]" -delete > /dev/null 2>&1 > $TMP3 && cat $TMP3 | awk '{print}' >>$TMP1;echo >> $TMP1;
+echo '- Large error_logs have been truncated' >>$TMP1;echo >> $TMP1;ionice -n 3 -c 3 find /home/*/public_html ! -path "/home/virtfs/" -name "error_log" -type f -size +20M -exec truncate -s1 {} \; > /dev/null 2>&1 > $TMP3 && cat $TMP3 | awk '{print}' >>$TMP1;echo >> $TMP1;
+echo '- Mail trash cans have been emptyied' >>$TMP1;echo >> $TMP1;find /home/*/mail/*/*/ -maxdepth 1 -name ".Trash" -type d -exec rm -fr {} \; > /dev/null 2>&1 > $TMP3 && cat $TMP3 | awk '{print}' >> $TMP1;echo >> $TMP1;
+echo '- eximstats truncated' >>$TMP1;echo >> $TMP1;mysql eximstats -e "truncate failures; truncate defers; truncate sends; truncate smtp;" > /dev/null 2>&1 > $TMP3 && cat $TMP3 | awk '{print}' >> $TMP1;echo >> $TMP1;
+echo '- Softaculous backups older then 2 days have been removed' >>$TMP1;echo >> $TMP1;find /home*/*/softaculous_backups/ ! -path "/home*/virtfs/*" -name "*.gz" -mtime +2 -exec rm -fv {} \; > /dev/null 2>&1 > $TMP3 && cat $TMP3 |sort -n|awk '{print}' >> $TMP1;echo >> $TMP1;
+echo '- List of core dump files:' >> $TMP1;echo >> $TMP1;find /home ! -path "/home/virtfs/" -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -fv {} \; > /dev/null 2>&1 > $TMP3 && cat $TMP3 | awk '{print}' >> $TMP1;echo >> $TMP1;
+echo '- Additional files which may be considered as not necessary:' >>$TMP1;echo >> $TMP1;find /var/lib/mysql -size +250M -exec du -hs {} \; | awk '{print}' >> $TMP1;ionice -n 3 -c 3 find /home ! -path "/home/virtfs/*" -type f -size +100M -exec du -hs {} \; > /dev/null 2>&1 > $TMP3 && cat $TMP3 |grep '.gz\|.tar\|.zip\|core\|log' |sort -n | awk '{print}' >> $TMP1;
 
 
 echo -e "Space currently available on device:\n$(df -h | awk '{print}')\n" >>$TMP1;
