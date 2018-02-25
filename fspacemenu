@@ -172,7 +172,7 @@ for i in $(echo "$@" | tr ' ' '\n' | awk '!x[$0]++');do
 		echo -e "\nAvailable suspended/terminated months:\n$(ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6}' | sort -u > /dev/null 2>&1)\nPlease enter one of months listed:"
 		read month
 			ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6,$7,$9}' | awk '!/.lock/' | grep $month > $TMP1
-		cat $TMP1 | awk '{print $3}' | while read line; do echo -e "Suspended/Terminated account: '$(cat $TMP1 | grep $line)'" && echo -e "Path/Size: $(du -h --max-depth=1 /home*/$line | tail -1 | awk '{print $2 " - " $1}')" && echo -e "True account owner: $(cat /etc/trueuserowners | grep $line | awk -F':' '{print $2}' )" && echo -e "Domains listed under account:\n$(cat /etc/userdomains | grep $line | awk -F':' '{print $1}')\n" ;done
+		cat $TMP1 | awk '{print $3}' | while read line; do echo -e "Suspended/Terminated account: '$(cat $TMP1 | grep $line)'" && echo -e "Path/Size: $(du -h --max-depth=1 /home*/$line/ | tail -1 | awk '{print $2 " - " $1}')" && echo -e "True account owner: $(cat /etc/trueuserowners | grep $line | awk -F':' '{print $2}' )" && echo -e "Domains listed under account:\n$(cat /etc/userdomains | grep $line | awk -F':' '{print $1}')\n" ;done
 			else
 				exit;
 			fi
@@ -318,7 +318,7 @@ until [ "$selection" = "exit" ]; do
 		echo -e "\nAvailable suspended/terminated months:\n$(ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6}' | sort -u > /dev/null 2>&1)\nPlease enter one of months listed:"
 		read month
 			ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6,$7,$9}' | awk '!/.lock/' | grep $month > $TMP1
-		cat $TMP1 | awk '{print $3}' | while read line; do echo -e "Suspended/Terminated account: '$(cat $TMP1 | grep $line)'" && echo -e "Path/Size: $(du -h --max-depth=1 /home*/$line | tail -1 | awk '{print $2 " - " $1}')" && echo -e "True account owner: $(cat /etc/trueuserowners | grep $line | awk -F':' '{print $2}' )" && echo -e "Domains listed under account:\n$(cat /etc/userdomains | grep $line | awk -F':' '{print $1}')\n" ;done
+		cat $TMP1 | awk '{print $3}' | while read line; do echo -e "Suspended/Terminated account: '$(cat $TMP1 | grep $line)'" && echo -e "Path/Size: $(du -h --max-depth=1 /home*/$line/ | tail -1 | awk '{print $2 " - " $1}')" && echo -e "True account owner: $(cat /etc/trueuserowners | grep $line | awk -F':' '{print $2}' )" && echo -e "Domains listed under account:\n$(cat /etc/userdomains | grep $line | awk -F':' '{print $1}')\n" ;done
 			else
 				exit;
 			fi
