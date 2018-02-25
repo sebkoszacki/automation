@@ -7,7 +7,8 @@ fi
 
 History="/root/.fmenus_bash_history"
 inodetmp="/tmp/inodetmp-$(date +%Y%m%d).log"
-trap "{ rm -f $inodetmp; }" EXIT
+TMP1="/tmp/cPltmp-$(date +%Y%m%d).log"
+trap "{ rm -f $inodetmp; rm -f $TMP1; }" EXIT
 
 # Available menu list:
 
@@ -22,10 +23,11 @@ menu8="8 - search for most inode used directory (search starts from location you
 menu9="9 - clearing files in /tmp folder"
 menu10="10 - delete all trash folder content from cpanel email accounts (Can take some time)"
 menu11="11 - search for core dump files and remove them (search is performed in /home* directory)"
+menu12="12 - Details about suspended/terminated accounts"
 
 if [[ $1 ]]; then
 
-if [[  $1 == "man" ]] || [[  $1 == "0" ]] || [[ $1 -ge "11" ]]
+if [[  $1 == "man" ]] || [[  $1 == "0" ]] || [[ $1 -ge "12" ]]
 then
 
 echo -e "Type 'fspacemenu man' for details on how to use this tool."
@@ -162,6 +164,19 @@ for i in $(echo "$@" | tr ' ' '\n' | awk '!x[$0]++');do
 
 	fi
 
+        if [[ $i == "12" ]]
+        then
+               	echo -e "\n${menu12}\n"
+			if [[ $(ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6}' | sort -u ) ]]; then 
+		echo -e "\nAvailable suspended/terminated months:\n$(ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6}' | sort -u > /dev/null 2>&1)\nPlease enter one of months listed:"
+		read month
+			ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6,$7,$9}' | awk '!/.lock/' | grep $month > $TMP1
+		cat $TMP1 | awk '{print $3}' | while read line; do echo -e "Suspended/Terminated account: '$(cat $TMP1 | grep $line)'" && echo -e "Path/Size: $(du -h --max-depth=1 /home*/$line | tail -1 | awk '{print $2 " - " $1}')" && echo -e "True account owner: $(cat /etc/trueuserowners | grep $line | awk -F':' '{print $2}' )" && echo -e "Domains listed under account:\n$(cat /etc/userdomains | grep $line | awk -F':' '{print $1}')\n" ;done
+			else
+				exit;
+			fi
+	fi
+
 if [[ $i == "man" ]]
 then
 
@@ -176,7 +191,7 @@ echo "Current load avarage:"
         echo
             df -ih
         echo
-    echo -e "${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n${menu9}\n${menu10}\n${menu11}\n"
+    echo -e "${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n${menu9}\n${menu10}\n${menu11}\n${menu12}\n"
 
 fi
 
@@ -204,7 +219,7 @@ until [ "$selection" = "exit" ]; do
         echo
             	df -ih
 
-    echo -e "\n${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n${menu9}\n${menu10}\n${menu11}\n"
+    echo -e "\n${menu1}\n${menu2}\n${menu3}\n${menu4}\n${menu5}\n${menu6}\n${menu7}\n${menu8}\n${menu9}\n${menu10}\n${menu11}\n${menu12}\n"
 
     echo -e "To exit please type 'exit' or '0' or simply press CTRL + C\n"
 
@@ -294,6 +309,17 @@ until [ "$selection" = "exit" ]; do
 	11) 
 		find /home* \( ! -path "/home/virtfs/*" \) -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -v {} \;
 		echo "$(date && who) find /home* \( ! -path "/home/virtfs/*" \) -type f \( -iname "core.[1-9]*" ! -iname "*.js" ! -iname "*.php" ! -iname "*.css" ! -iname "*.txt" ! -iname "*.gz" \) -exec rm -v {} \;" >>  ${History}
+	;;
+	12)
+
+			if [[ $(ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6}' | sort -u ) ]]; then
+		echo -e "\nAvailable suspended/terminated months:\n$(ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6}' | sort -u > /dev/null 2>&1)\nPlease enter one of months listed:"
+		read month
+			ls -lat /var/cpanel/suspended/ | awk 'NR>3' | awk '{print $6,$7,$9}' | awk '!/.lock/' | grep $month > $TMP1
+		cat $TMP1 | awk '{print $3}' | while read line; do echo -e "Suspended/Terminated account: '$(cat $TMP1 | grep $line)'" && echo -e "Path/Size: $(du -h --max-depth=1 /home*/$line | tail -1 | awk '{print $2 " - " $1}')" && echo -e "True account owner: $(cat /etc/trueuserowners | grep $line | awk -F':' '{print $2}' )" && echo -e "Domains listed under account:\n$(cat /etc/userdomains | grep $line | awk -F':' '{print $1}')\n" ;done
+			else
+				exit;
+			fi
 	;;
 	exit ) 
 		echo "GoodBye!!!" && exit
