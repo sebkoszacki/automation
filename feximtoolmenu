@@ -213,7 +213,7 @@ if [[ $1 ]]; then
                             	echo -e "\n${menu8}\n"
 
 					# checks for spammer email account based on exim_mainlog and email number sent since midnight
-					for i in $(cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" |  grep A=dovecot_ | grep ":" | grep "@"  | sed '/authenticator/d' | sed 's/^.* A=dovecot_[a-z]*:\([^ ]*\).*$/\1/' | sort -n | uniq -c | sort -n | awk '{print $2}'); do if [[ $(exiqgrep -f ${i} -i | wc -l) -ge 0 ]]; then echo ${i} && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvh | head -40 && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvb | head -50 ; fi ; done
+					for i in $(cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" |  grep A=dovecot_ | grep ":" | grep "@"  | sed '/authenticator/d' | sed 's/^.* A=dovecot_[a-z]*:\([^ ]*\).*$/\1/' | sort -n | uniq -c | sort -n | awk '{print $2}'); do if [[ $(exiqgrep -f ${i} -i | wc -l) -ge 3 ]]; then echo ${i} && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvh | head -40 && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvb | head -50 ; fi ; done
 
 						# action part of script for compromised email account
 
@@ -462,7 +462,7 @@ else
                             	echo -e "\n${menu8}\n"
 
 					# checks for spammer email account based on exim_mainlog and email number sent since midnight
-					for i in $(cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" |  grep A=dovecot_ | grep ":" | grep "@"  | sed '/authenticator/d' | sed 's/^.* A=dovecot_[a-z]*:\([^ ]*\).*$/\1/' | sort -n | uniq -c | sort -n | awk '{print $2}'); do if [[ $(exiqgrep -f ${i} -i | wc -l) -ge 0 ]]; then echo ${i} && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvh | head -40 && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvb | head -50 ; fi ; done
+					for i in $(cat /var/log/exim_mainlog | grep "$(date +%Y-%m-%d)" |  grep A=dovecot_ | grep ":" | grep "@"  | sed '/authenticator/d' | sed 's/^.* A=dovecot_[a-z]*:\([^ ]*\).*$/\1/' | sort -n | uniq -c | sort -n | awk '{print $2}'); do if [[ $(exiqgrep -f ${i} -i | wc -l) -ge 3 ]]; then echo ${i} && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvh | head -40 && exiqgrep -f ${i} -i | tail -1 | xargs exim -Mvb | head -50 ; fi ; done
 
 						# action part of script for compromised email account
 
